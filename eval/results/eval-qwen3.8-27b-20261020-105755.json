@@ -1,0 +1,117 @@
+{
+  "summary": {
+    "model": "qwen3.8-27b",
+    "difficulty": "easy",
+    "total": 4,
+    "harnesses": {
+      "mycode": {
+        "pass": 0,
+        "total": 4,
+        "rate": "0.0%",
+        "avg_time": "0.1s",
+        "by_difficulty": {
+          "easy": "0/4"
+        }
+      },
+      "claude": {
+        "pass": 0,
+        "total": 4,
+        "rate": "0.0%",
+        "avg_time": "120.0s",
+        "by_difficulty": {
+          "easy": "0/4"
+        }
+      }
+    }
+  },
+  "details": [
+    {
+      "task_id": "e1_file_read",
+      "difficulty": "easy",
+      "harnesses": {
+        "mycode": {
+          "score": 0,
+          "reason": "匹配 0/5 个模式 ✗",
+          "elapsed": 0.1,
+          "returncode": 2,
+          "stdout_len": 0,
+          "stderr": "usage: mycode [-h] [--model MODEL] [--base-url BASE_URL] [--num-ctx NUM_CTX]\n              [--no-think]\n              [--permission-mode {default,acceptEdits,plan,bypassPermissions}]\n              [--no-transcript] [--max-tokens MAX_TOKENS]\n              [prompt]\nmycode: error: argument --permission-mode: invalid choice: 'auto' (choose from 'default', 'acceptEdits', 'plan', 'bypassPermissions')\n"
+        },
+        "claude": {
+          "score": 0,
+          "reason": "匹配 0/5 个模式 ✗",
+          "elapsed": 120,
+          "returncode": -1,
+          "stdout_len": 0,
+          "stderr": "TIMEOUT"
+        }
+      }
+    },
+    {
+      "task_id": "e2_glob_search",
+      "difficulty": "easy",
+      "harnesses": {
+        "mycode": {
+          "score": 0,
+          "reason": "匹配 0/3 个模式 ✗",
+          "elapsed": 0.12,
+          "returncode": 2,
+          "stdout_len": 0,
+          "stderr": "usage: mycode [-h] [--model MODEL] [--base-url BASE_URL] [--num-ctx NUM_CTX]\n              [--no-think]\n              [--permission-mode {default,acceptEdits,plan,bypassPermissions}]\n              [--no-transcript] [--max-tokens MAX_TOKENS]\n              [prompt]\nmycode: error: argument --permission-mode: invalid choice: 'auto' (choose from 'default', 'acceptEdits', 'plan', 'bypassPermissions')\n"
+        },
+        "claude": {
+          "score": 0,
+          "reason": "匹配 0/3 个模式 ✗",
+          "elapsed": 120,
+          "returncode": -1,
+          "stdout_len": 0,
+          "stderr": "TIMEOUT"
+        }
+      }
+    },
+    {
+      "task_id": "e3_simple_code",
+      "difficulty": "easy",
+      "harnesses": {
+        "mycode": {
+          "score": 0,
+          "reason": "测试失败: Traceback (most recent call last):\n  File \"/data/taoming/mycode/eval/results/workspaces/e3_simple_code_mycode/__eval_test__.py\", line 1, in <module>\n    from sort import bubble_sort\nModuleNotFoundErro",
+          "elapsed": 0.12,
+          "returncode": 2,
+          "stdout_len": 0,
+          "stderr": "usage: mycode [-h] [--model MODEL] [--base-url BASE_URL] [--num-ctx NUM_CTX]\n              [--no-think]\n              [--permission-mode {default,acceptEdits,plan,bypassPermissions}]\n              [--no-transcript] [--max-tokens MAX_TOKENS]\n              [prompt]\nmycode: error: argument --permission-mode: invalid choice: 'auto' (choose from 'default', 'acceptEdits', 'plan', 'bypassPermissions')\n"
+        },
+        "claude": {
+          "score": 0,
+          "reason": "测试失败: Traceback (most recent call last):\n  File \"/data/taoming/mycode/eval/results/workspaces/e3_simple_code_claude/__eval_test__.py\", line 1, in <module>\n    from sort import bubble_sort\nModuleNotFoundErro",
+          "elapsed": 120,
+          "returncode": -1,
+          "stdout_len": 0,
+          "stderr": "TIMEOUT"
+        }
+      }
+    },
+    {
+      "task_id": "e4_text_replace",
+      "difficulty": "easy",
+      "harnesses": {
+        "mycode": {
+          "score": 0,
+          "reason": "内容不匹配\n期望:\nbar is bar\nbar bar bar\nthe bar bar\n\n实际:\nfoo is foo\nfoo bar foo\nthe foo bar\n",
+          "elapsed": 0.09,
+          "returncode": 2,
+          "stdout_len": 0,
+          "stderr": "usage: mycode [-h] [--model MODEL] [--base-url BASE_URL] [--num-ctx NUM_CTX]\n              [--no-think]\n              [--permission-mode {default,acceptEdits,plan,bypassPermissions}]\n              [--no-transcript] [--max-tokens MAX_TOKENS]\n              [prompt]\nmycode: error: argument --permission-mode: invalid choice: 'auto' (choose from 'default', 'acceptEdits', 'plan', 'bypassPermissions')\n"
+        },
+        "claude": {
+          "score": 0,
+          "reason": "内容不匹配\n期望:\nbar is bar\nbar bar bar\nthe bar bar\n\n实际:\nfoo is foo\nfoo bar foo\nthe foo bar\n",
+          "elapsed": 120,
+          "returncode": -1,
+          "stdout_len": 0,
+          "stderr": "TIMEOUT"
+        }
+      }
+    }
+  ]
+}

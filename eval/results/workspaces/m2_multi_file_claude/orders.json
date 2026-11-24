@@ -1,0 +1,17 @@
+[
+  {
+    "order_id": 101,
+    "user_id": 3,
+    "amount": 50
+  },
+  {
+    "order_id": 102,
+    "user_id": 1,
+    "amount": 30
+  },
+  {
+    "order_id": 103,
+    "user_id": 3,
+    "amount": 20
+  }
+]

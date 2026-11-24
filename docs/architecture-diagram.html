@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mycode vs claude-code — Workflow / Harness 架构图</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-orange: #d29922;
+    --accent-red: #f85149;
+    --accent-purple: #bc8cff;
+    --accent-cyan: #39d0d8;
+    --claude: #d97757;
+    --mycode: #39d0d8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+    padding: 24px;
+  }
+  h1 {
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--claude), var(--mycode));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { text-align: center; color: var(--text-dim); margin-bottom: 32px; font-size: 14px; }
+  h2 {
+    font-size: 20px;
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h2 .badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: normal;
+  }
+  h3 { font-size: 16px; margin: 20px 0 10px; color: var(--accent-blue); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+  }
+  .card.claude { border-top: 3px solid var(--claude); }
+  .card.mycode { border-top: 3px solid var(--mycode); }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .card-title .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .claude .dot { background: var(--claude); }
+  .mycode .dot { background: var(--mycode); }
+
+  .layer {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .layer:last-child { margin-bottom: 0; }
+  .layer-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .layer-content { color: var(--text); }
+  .layer-content code {
+    background: rgba(88,166,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent-blue);
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 0; }
+  .stack .layer { position: relative; }
+  .stack .layer::after {
+    content: "↓";
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-dim);
+    font-size: 12px;
+    z-index: 1;
+  }
+  .stack .layer:last-child::after { display: none; }
+
+  /* Agent Loop Flow */
+  .loop-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .loop-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    padding: 20px 0;
+  }
+  .loop-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 13px;
+    min-width: 120px;
+    position: relative;
+  }
+  .loop-step .step-num {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: var(--accent-blue);
+    color: var(--bg);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .loop-step .step-title { font-weight: 600; margin-bottom: 2px; }
+  .loop-step .step-desc { font-size: 11px; color: var(--text-dim); }
+  .loop-arrow {
+    color: var(--text-dim);
+    font-size: 18px;
+    padding: 0 6px;
+  }
+  .loop-arrow.down { display: none; }
+
+  .loop-detail {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  /* Comparison table */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .cmp-table th, .cmp-table td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  .cmp-table th {
+    background: var(--surface2);
+    color: var(--text);
+    font-weight: 600;
+  }
+  .cmp-table td:first-child { color: var(--text-dim); width: 18%; }
+  .cmp-table .claude-col { color: var(--claude); }
+  .cmp-table .mycode-col { color: var(--mycode); }
+  .cmp-table code {
+    background: rgba(88,166,255,0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+
+  /* Tool grid */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .tool-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    text-align: center;
+    font-family: "SF Mono", "Fira Code", monospace;
+  }
+  .tool-tag.active { border-color: var(--accent-green); color: var(--accent-green); }
+  .tool-tag.inactive { border-color: var(--border); color: var(--text-dim); opacity: 0.5; }
+  .tool-tag.dynamic { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+  /* Harness layers */
+  .harness-layer {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent-purple);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .harness-layer .hl-title { font-weight: 600; color: var(--accent-purple); margin-bottom: 2px; }
+  .harness-layer .hl-desc { color: var(--text-dim); font-size: 12px; }
+  .harness-layer.implemented { border-left-color: var(--accent-green); }
+  .harness-layer.implemented .hl-title { color: var(--accent-green); }
+  .harness-layer.partial { border-left-color: var(--accent-orange); }
+  .harness-layer.partial .hl-title { color: var(--accent-orange); }
+  .harness-layer.stub { border-left-color: var(--text-dim); }
+  .harness-layer.stub .hl-title { color: var(--text-dim); }
+
+  .status-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .status-tag.done { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  .status-tag.partial { background: rgba(210,153,34,0.15); color: var(--accent-orange); }
+  .status-tag.stub { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+  .status-tag.missing { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+
+  /* SVG flow */
+  svg { display: block; margin: 0 auto; }
+  .svg-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+
+  .legend { display: flex; gap: 16px; justify-content: center; margin: 12px 0; font-size: 12px; color: var(--text-dim); }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .note {
+    background: rgba(210,153,34,0.08);
+    border: 1px solid rgba(210,153,34,0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin: 12px 0;
+    color: var(--accent-orange);
+  }
+
+  .file-tree {
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-dim);
+  }
+  .file-tree .dir { color: var(--accent-blue); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .highlight { color: var(--accent-green); }
+</style>
+</head>
+<body>
+
+<h1>mycode vs claude-code — Workflow / Harness 详细架构</h1>
+<p class="subtitle">基于 claude-code@2.1.296 逆向产出（artifacts/recon/）+ mycode 源码（src/mycode/）· 2026-10-14</p>
+
+<!-- ==================== 1. 整体分层架构对比 ==================== -->
+<h2>一、整体分层架构对比</h2>
+
+<div class="grid-2">
+
+  <!-- Claude Code -->
+  <div class="card claude">
+    <div class="card-title"><span class="dot"></span> claude-code@2.1.296（逆向还原）</div>
+
+    <div class="stack">
+      <div class="layer">
+        <div class="layer-label">CLI 入口层</div>
+        <div class="layer-content">
+          <code>cli-wrapper.cjs</code> → <code>claude.exe</code>（Bun 单文件二进制 246MB）<br>
+          交互模式 / <code>-p</code> 非交互模式 / SDK 模式
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">Runtime 层</div>
+        <div class="layer-content">
+          Bun runtime（Zig/C++）+ JavaScriptCore(JSC) 引擎<br>
+          <span style="color:var(--text-dim)">应用逻辑以 JSC bytecode 内嵌，非明文 JS</span>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">Harness 层 <span class="status-tag done">逆向完成</span></div>
+        <div class="layer-content">
+          <b>system prompt 11 段</b>：<code># Harness</code> / <code># Memory</code> / <code># Context management</code> / <code># Environment</code> / …<br>
+          <b>请求编排参数</b>：<code>thinking={adaptive}</code> / <code>context_management={clear_thinking}</code> / <code>safeguards={dangerous_tool_use}</code> / <code>output_config={effort:medium}</code><br>
+          <b>权限</b>：allow/deny/ask 规则 + auto_mode + trusted_directories<br>
+          <b>Hooks</b>：PreToolUse / PostToolUse / Stop / SubagentStop<br>
+          <b>Memory</b>：frontmatter 知识卡 + MEMORY.md 索引<br>
+          <b>Skills</b>：用户可调用 skill / <code>/skill-name</code><br>
+          <b>Safeguards</b>：dangerous_tool_use 分类器
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">Agent Loop 层</div>
+        <div class="layer-content">
+          <code>stream:true</code> SSE 流式 → <code>tool_use</code> → 执行 → <code>tool_result</code> 回填 → 逐轮追加 messages<br>
+          <b>mid-conversation system turns</b>：Environment / token 预算以 system 轮注入<br>
+          <b>prompt caching</b>：<code>cache_control</code> 标记
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">工具层 <span class="status-tag done">44 契约 / 20 运行时</span></div>
+        <div class="layer-content">
+          白盒 <code>sdk-tools.d.ts</code> 静态声明 44 个工具契约（<code>ToolInputSchemas</code> union）<br>
+          运行时 <code>-p</code> 模式实抓 20 个工具，差集 24 个未下发<br>
+          3 个运行时动态注册无静态契约：<code>Skill</code>/<code>SendMessage</code>/<code>ListAgents</code>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">LLM 后端</div>
+        <div class="layer-content">
+          <code>claude-opus-5-5</code> / <code>max_tokens=128000</code><br>
+          Anthropic <code>/v1/messages?beta=true</code> API<br>
+          可重定向：<code>ANTHROPIC_BASE_URL</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- mycode -->
+  <div class="card mycode">
+    <div class="card-title"><span class="dot"></span> mycode（实际源码）</div>
+
+    <div class="stack">
+      <div class="layer">
+        <div class="layer-label">CLI 入口层</div>
+        <div class="layer-content">
+          <code>src/mycode/cli/main.py</code> → <code>__main__.py</code><br>
+          交互模式 / <code>-p</code> 非交互模式
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">Runtime 层</div>
+        <div class="layer-content">
+          Python 3.10+ 纯 Python 实现<br>
+          <span style="color:var(--text-dim)">无二进制编译，源码可直接阅读</span>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">Harness 层 <span class="status-tag partial">部分实现</span></div>
+        <div class="layer-content">
+          <b>system prompt 8 段</b>：身份 / 安全 / <code># Harness</code> / 代码风格 / 不可逆操作 / <code># Honesty</code> / <code># Memory</code>(可选) / <code># Environment</code> / <code># Context management</code><br>
+          <b>权限</b>：<code>PermissionManager</code> — DEFAULT / AUTO 模式 + read/write/bash 风险分级<br>
+          <b>Hooks</b>：<code>HookManager</code> — PreToolUse / PostToolUse / Stop / SubagentStop（callable + shell）<br>
+          <b>Memory</b>：system prompt 描述了机制，<b>未实现加载/注入</b><br>
+          <b>Skills</b>：<code>harness/skills.py</code> 存在，加载机制待完善<br>
+          <b>Safeguards</b>：<span style="color:var(--text-dim)">未实现</span>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">Agent Loop 层</div>
+        <div class="layer-content">
+          <code>agent/loop.py</code> — <code>for i in range(max_iterations)</code><br>
+          非流式（同步 <code>llm.chat()</code>）→ <code>tool_calls</code> → 权限 → hooks → 执行 → <code>tool_result</code><br>
+          <b>context management</b>：<code>estimate_tokens</code> + <code>summarize_old_messages</code><br>
+          <b>transcript</b>：<code>agent/transcript.py</code> 日志记录<br>
+          <span style="color:var(--text-dim)">无 SSE / 无 mid-conversation system turns / 无 prompt caching</span>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">工具层 <span class="status-tag done">18 个已实现</span></div>
+        <div class="layer-content">
+          <code>tools/</code> 目录下 18 个工具文件，含：<br>
+          Bash / Read / Write / Edit / Glob / Grep / Agent / TodoWrite / WebFetch / WebSearch / Skill / Workflow / Cron / Worktree / NotebookEdit / ListAgents / Messaging / TaskStop<br>
+          <span style="color:var(--text-dim)">对齐 claude-code 真实契约（Grep 含 output_mode/-A/-B/-C 等）</span>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-label">LLM 后端</div>
+        <div class="layer-content">
+          <code>llm/provider.py</code> Protocol 抽象 + <code>llm/ollama.py</code> 适配器<br>
+          Ollama <code>11434</code> — qwen3-32b（<code>think:false</code>）/ deepseek-r1-32b<br>
+          Anthropic <code>/v1/messages</code> 兼容格式
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 2. Agent Loop 工作流程 ==================== -->
+<h2>二、Agent Loop 工作流程（核心循环）</h2>
+
+<div class="svg-wrap">
+  <svg width="920" height="520" viewBox="0 0 920 520">
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#8b949e"/>
+      </marker>
+      <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#3fb950"/>
+      </marker>
+      <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#f85149"/>
+      </marker>
+    </defs>
+
+    <!-- Start -->
+    <rect x="370" y="10" width="180" height="36" rx="18" fill="#1c2330" stroke="#58a6ff" stroke-width="1.5"/>
+    <text x="460" y="33" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="600">user_prompt 输入</text>
+
+    <line x1="460" y1="46" x2="460" y2="66" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Context init -->
+    <rect x="340" y="68" width="240" height="44" rx="6" fill="#1c2330" stroke="#30363d"/>
+    <text x="460" y="86" text-anchor="middle" fill="#c9d1d9" font-size="12" font-weight="600">Context 初始化</text>
+    <text x="460" y="103" text-anchor="middle" fill="#8b949e" font-size="11">ctx.add_user(prompt) · tools.to_schemas()</text>
+
+    <line x1="460" y1="112" x2="460" y2="132" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Loop box -->
+    <rect x="200" y="134" width="520" height="300" rx="8" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="210" y="150" fill="#bc8cff" font-size="12" font-weight="600">for i in range(max_iterations):</text>
+
+    <!-- Step 1: context management -->
+    <rect x="280" y="158" width="360" height="36" rx="6" fill="#1c2330" stroke="#30363d"/>
+    <text x="460" y="181" text-anchor="middle" fill="#c9d1d9" font-size="12">① token 估算 → 超限则 summarize_old_messages()</text>
+
+    <line x1="460" y1="194" x2="460" y2="208" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Step 2: LLM call -->
+    <rect x="280" y="210" width="360" height="36" rx="6" fill="#1c2330" stroke="#39d0d8" stroke-width="1.5"/>
+    <text x="460" y="233" text-anchor="middle" fill="#39d0d8" font-size="12" font-weight="600">② llm.chat(messages, tools, system) → LLMResponse</text>
+
+    <line x1="460" y1="246" x2="460" y2="260" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Step 3: check tool_calls -->
+    <polygon points="460,262 560,300 460,338 360,300" fill="#1c2330" stroke="#d29922" stroke-width="1.5"/>
+    <text x="460" y="297" text-anchor="middle" fill="#d29922" font-size="12" font-weight="600">③ 有 tool_calls?</text>
+
+    <!-- No → end -->
+    <line x1="560" y1="300" x2="760" y2="300" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <text x="660" y="293" text-anchor="middle" fill="#3fb950" font-size="11">否</text>
+    <rect x="762" y="282" width="140" height="36" rx="18" fill="#1c2330" stroke="#3fb950" stroke-width="1.5"/>
+    <text x="832" y="305" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">返回 content · 结束</text>
+
+    <!-- Yes → continue -->
+    <line x1="460" y1="338" x2="460" y2="352" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="470" y="348" fill="#8b949e" font-size="11">是</text>
+
+    <!-- Step 4: per tool_call -->
+    <rect x="250" y="354" width="420" height="62" rx="6" fill="#1c2330" stroke="#30363d"/>
+    <text x="460" y="372" text-anchor="middle" fill="#c9d1d9" font-size="12" font-weight="600">④ 对每个 tool_call 依次执行：</text>
+    <text x="460" y="388" text-anchor="middle" fill="#8b949e" font-size="11">hooks.fire_pre_tool_use() → permissions.check()</text>
+    <text x="460" y="404" text-anchor="middle" fill="#8b949e" font-size="11">→ tools.execute() → hooks.fire_post_tool_use()</text>
+
+    <!-- Step 5: add to context -->
+    <line x1="460" y1="416" x2="460" y2="430" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <rect x="280" y="432" width="360" height="36" rx="6" fill="#1c2330" stroke="#30363d"/>
+    <text x="460" y="455" text-anchor="middle" fill="#c9d1d9" font-size="12">⑤ ctx.add_assistant(tool_use) + ctx.add_tool_result(result)</text>
+
+    <!-- loop back -->
+    <path d="M 280 450 Q 160 450 160 300 Q 160 176 280 176" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrow)"/>
+    <text x="150" y="310" text-anchor="middle" fill="#bc8cff" font-size="11" transform="rotate(-90 150 310)">下一轮迭代</text>
+
+    <!-- Claude extras annotation -->
+    <rect x="200" y="470" width="520" height="40" rx="6" fill="rgba(217,119,87,0.08)" stroke="rgba(217,119,87,0.3)"/>
+    <text x="460" y="487" text-anchor="middle" fill="#d97757" font-size="11" font-weight="600">claude-code 额外行为（mycode 暂无）：</text>
+    <text x="460" y="502" text-anchor="middle" fill="#d97757" font-size="11">SSE 流式 · mid-conversation system turns（Environment / token 预算）· prompt caching · 并行 tool_use</text>
+  </svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:#39d0d8"></span> mycode 实现</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#bc8cff"></span> 循环控制</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#d29922"></span> 分支判断</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#3fb950"></span> 正常出口</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#d97757"></span> claude-code 独有</div>
+</div>
+
+<!-- ==================== 3. Harness 层详细对比 ==================== -->
+<h2>三、Harness 层详细对比</h2>
+
+<div class="grid-2">
+  <div class="card claude">
+    <div class="card-title"><span class="dot"></span> claude-code Harness 组件</div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">System Prompt 编排<span class="status-tag done">11 段</span></div>
+      <div class="hl-desc">身份 → 安全策略 → <code># Harness</code> → 代码风格 → 不可逆操作 → <code># Session-specific</code> → <code># Memory</code> → <code># Environment</code> → <code># Context management</code> + token 预算注入</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Permission System<span class="status-tag done">完整</span></div>
+      <div class="hl-desc">allow/deny/ask 三段规则 · auto_mode(allow/soft_deny/hard_deny) · trusted_directories · block_reads_outside · 按工具+参数匹配</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Hooks<span class="status-tag done">4 类</span></div>
+      <div class="hl-desc">PreToolUse（可阻止/修改参数）· PostToolUse（可修改结果）· Stop · SubagentStop — 支持 shell 命令 + callable</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Memory<span class="status-tag done">完整</span></div>
+      <div class="hl-desc">frontmatter 知识卡（name/description/type）· MEMORY.md 索引 · 四类型（user/feedback/project/reference）· 会话启动时注入 context · 写入前去重检查</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Context Management<span class="status-tag done">完整</span></div>
+      <div class="hl-desc"><code>context_management.edits</code> = <code>clear_thinking</code>（清除 thinking block）· 长对话摘要 · <code>cache_control</code> prompt caching · token 预算以 system 轮注入</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Safeguards<span class="status-tag done">完整</span></div>
+      <div class="hl-desc"><code>dangerous_tool_use</code> 分类器 — 带 permission_mode / platform / cwd / git_state / trusted_directories 等完整上下文</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Skills<span class="status-tag done">完整</span></div>
+      <div class="hl-desc">用户 <code>/skill-name</code> 触发 · Skill 工具调用 · 仅允许 listed skills · 动态注册</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Subagent / Workflow<span class="status-tag done">完整</span></div>
+      <div class="hl-desc">Agent 工具（10 字段：prompt/subagent_type/…）· Task{Create,Get,Update,List} · Workflow · Enter/ExitPlanMode · Enter/ExitWorktree</div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Thinking<span class="status-tag done">adaptive</span></div>
+      <div class="hl-desc"><code>thinking={type:adaptive, display:omitted}</code> — 模型自适应决定是否思考 · <code>clear_thinking</code> 在上下文管理中清除旧 thinking block</div>
+    </div>
+  </div>
+
+  <!-- mycode harness -->
+  <div class="card mycode">
+    <div class="card-title"><span class="dot"></span> mycode Harness 组件</div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">System Prompt 编排<span class="status-tag done">8 段</span></div>
+      <div class="hl-desc">身份 → 安全 → <code># Harness</code> → 代码风格 → 不可逆操作 → <code># Honesty and epistemic boundaries</code> → <code># Memory</code>(可选) → <code># Environment</code> → <code># Context management</code><br><span style="color:var(--accent-green)">独有：Honesty 段（禁止编造、如实报告失败）</span></div>
+    </div>
+
+    <div class="harness-layer partial">
+      <div class="hl-title">Permission System<span class="status-tag partial">简化</span></div>
+      <div class="hl-desc">DEFAULT / AUTO 两模式 · read/write/bash 三级风险 · 交互式 y/N 确认 · 非交互自动通过<br><span style="color:var(--accent-orange)">缺：allow/deny/ask 规则、trusted_directories、按参数匹配</span></div>
+    </div>
+
+    <div class="harness-layer implemented">
+      <div class="hl-title">Hooks<span class="status-tag done">4 类</span></div>
+      <div class="hl-desc">PreToolUse · PostToolUse · Stop · SubagentStop — 支持 callable + shell 命令 · 按工具名过滤<br><span style="color:var(--accent-green)">与 claude-code 对齐</span></div>
+    </div>
+
+    <div class="harness-layer stub">
+      <div class="hl-title">Memory<span class="status-tag stub">仅 prompt 描述</span></div>
+      <div class="hl-desc">system prompt 描述了 frontmatter 格式 + MEMORY.md 索引机制<br><span style="color:var(--text-dim)">缺：加载/注入逻辑、会话启动读取、去重检查</span></div>
+    </div>
+
+    <div class="harness-layer partial">
+      <div class="hl-title">Context Management<span class="status-tag partial">基础</span></div>
+      <div class="hl-desc"><code>estimate_messages_tokens</code> 估算 + <code>summarize_old_messages</code> 摘要旧消息<br><span style="color:var(--accent-orange)">缺：clear_thinking、prompt caching、token 预算 system 轮注入</span></div>
+    </div>
+
+    <div class="harness-layer stub">
+      <div class="hl-title">Safeguards<span class="status-tag missing">未实现</span></div>
+      <div class="hl-desc">无 dangerous_tool_use 分类器</div>
+    </div>
+
+    <div class="harness-layer partial">
+      <div class="hl-title">Skills<span class="status-tag partial">骨架</span></div>
+      <div class="hl-desc"><code>harness/skills.py</code> + <code>tools/skill.py</code> 文件存在<br><span style="color:var(--accent-orange)">加载机制待完善</span></div>
+    </div>
+
+    <div class="harness-layer partial">
+      <div class="hl-title">Subagent / Workflow<span class="status-tag partial">部分</span></div>
+      <div class="hl-desc"><code>harness/subagent.py</code> + <code>tools/agent.py</code> + <code>tools/workflow.py</code> + <code>tools/worktree.py</code> 存在<br>Agent 工具可启动 explore 子 agent<br><span style="color:var(--accent-orange)">缺：Task{Create,Get,Update,List}、PlanMode</span></div>
+    </div>
+
+    <div class="harness-layer stub">
+      <div class="hl-title">Thinking<span class="status-tag stub">未实现</span></div>
+      <div class="hl-desc">通过 Ollama <code>think:false</code> 在适配器层关闭<br><span style="color:var(--text-dim)">无 adaptive thinking / clear_thinking</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 4. 工具集对比 ==================== -->
+<h2>四、工具集对比</h2>
+
+<div class="grid-2">
+  <div class="card claude">
+    <div class="card-title"><span class="dot"></span> claude-code 工具（运行时 20 + 静态 44）</div>
+    <h3>运行时实抓 20 个</h3>
+    <div class="tool-grid">
+      <div class="tool-tag active">Agent</div>
+      <div class="tool-tag active">Bash</div>
+      <div class="tool-tag active">Read</div>
+      <div class="tool-tag active">Write</div>
+      <div class="tool-tag active">Edit</div>
+      <div class="tool-tag active">NotebookEdit</div>
+      <div class="tool-tag active">WebFetch</div>
+      <div class="tool-tag active">WebSearch</div>
+      <div class="tool-tag dynamic">Skill</div>
+      <div class="tool-tag active">Workflow</div>
+      <div class="tool-tag active">CronCreate</div>
+      <div class="tool-tag active">CronDelete</div>
+      <div class="tool-tag active">CronList</div>
+      <div class="tool-tag active">EnterWorktree</div>
+      <div class="tool-tag active">ExitWorktree</div>
+      <div class="tool-tag dynamic">SendMessage</div>
+      <div class="tool-tag active">ReportFindings</div>
+      <div class="tool-tag active">ScheduleWakeup</div>
+      <div class="tool-tag dynamic">ListAgents</div>
+      <div class="tool-tag active">TaskStop</div>
+    </div>
+    <h3>静态契约 24 个未下发</h3>
+    <div class="tool-grid">
+      <div class="tool-tag inactive">Glob</div>
+      <div class="tool-tag inactive">Grep</div>
+      <div class="tool-tag inactive">TodoWrite</div>
+      <div class="tool-tag inactive">AskUserQuestion</div>
+      <div class="tool-tag inactive">TaskCreate</div>
+      <div class="tool-tag inactive">TaskGet</div>
+      <div class="tool-tag inactive">TaskUpdate</div>
+      <div class="tool-tag inactive">TaskList</div>
+      <div class="tool-tag inactive">EnterPlanMode</div>
+      <div class="tool-tag inactive">ExitPlanMode</div>
+      <div class="tool-tag inactive">Mcp</div>
+      <div class="tool-tag inactive">ListMcpResources</div>
+      <div class="tool-tag inactive">ReadMcpResource</div>
+      <div class="tool-tag inactive">ReadMcpDir</div>
+      <div class="tool-tag inactive">RefreshMcpTools</div>
+      <div class="tool-tag inactive">Artifact</div>
+      <div class="tool-tag inactive">Projects</div>
+      <div class="tool-tag inactive">ClaudeDesign</div>
+      <div class="tool-tag inactive">SendFeedback</div>
+      <div class="tool-tag inactive">PushNotification</div>
+      <div class="tool-tag inactive">ReadNotifications</div>
+      <div class="tool-tag inactive">RemoteTrigger</div>
+      <div class="tool-tag inactive">Monitor</div>
+      <div class="tool-tag inactive">ProposeGoal</div>
+    </div>
+  </div>
+
+  <div class="card mycode">
+    <div class="card-title"><span class="dot"></span> mycode 工具（18 个已实现）</div>
+    <h3>已实现 18 个</h3>
+    <div class="tool-grid">
+      <div class="tool-tag active">Bash</div>
+      <div class="tool-tag active">Read</div>
+      <div class="tool-tag active">Write</div>
+      <div class="tool-tag active">Edit</div>
+      <div class="tool-tag active">Glob</div>
+      <div class="tool-tag active">Grep</div>
+      <div class="tool-tag active">Agent</div>
+      <div class="tool-tag active">TodoWrite</div>
+      <div class="tool-tag active">WebFetch</div>
+      <div class="tool-tag active">WebSearch</div>
+      <div class="tool-tag active">Skill</div>
+      <div class="tool-tag active">Workflow</div>
+      <div class="tool-tag active">Cron</div>
+      <div class="tool-tag active">Worktree</div>
+      <div class="tool-tag active">NotebookEdit</div>
+      <div class="tool-tag active">ListAgents</div>
+      <div class="tool-tag active">Messaging</div>
+      <div class="tool-tag active">TaskStop</div>
+    </div>
+    <h3>未实现（claude-code 有）</h3>
+    <div class="tool-grid">
+      <div class="tool-tag inactive">AskUserQuestion</div>
+      <div class="tool-tag inactive">TaskCreate</div>
+      <div class="tool-tag inactive">TaskGet</div>
+      <div class="tool-tag inactive">TaskUpdate</div>
+      <div class="tool-tag inactive">TaskList</div>
+      <div class="tool-tag inactive">EnterPlanMode</div>
+      <div class="tool-tag inactive">ExitPlanMode</div>
+      <div class="tool-tag inactive">Mcp*</div>
+      <div class="tool-tag inactive">Artifact</div>
+      <div class="tool-tag inactive">Monitor</div>
+    </div>
+    <div class="note" style="margin-top:12px">
+      mycode 的 Glob/Grep/Read 已对齐 claude-code 真实契约：<br>
+      Grep 含 output_mode / -A / -B / -C / -n / -i / -o / type / head_limit / offset / multiline<br>
+      Read 含 pages（PDF 页范围，走 pdftotext）/ allow_large
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 5. 请求协议对比 ==================== -->
+<h2>五、API 请求协议对比</h2>
+
+<table class="cmp-table">
+  <tr>
+    <th>维度</th>
+    <th class="claude-col">claude-code</th>
+    <th class="mycode-col">mycode</th>
+  </tr>
+  <tr>
+    <td>API 端点</td>
+    <td><code>/v1/messages?beta=true</code>（Anthropic 原生）</td>
+    <td><code>/v1/chat/completions</code> 或 <code>/v1/messages</code>（Ollama 兼容）</td>
+  </tr>
+  <tr>
+    <td>流式</td>
+    <td><code>stream: true</code> — SSE 分帧（message_start / content_block_delta / message_stop）</td>
+    <td>非流式 — 同步 <code>requests.post()</code> 等待完整响应</td>
+  </tr>
+  <tr>
+    <td>model</td>
+    <td><code>claude-opus-5-5</code></td>
+    <td><code>qwen3-32b</code>（<code>think:false</code> 关闭思考）</td>
+  </tr>
+  <tr>
+    <td>max_tokens</td>
+    <td><code>128000</code></td>
+    <td>由 Ollama 适配器设置</td>
+  </tr>
+  <tr>
+    <td>thinking</td>
+    <td><code>{type: "adaptive", display: "omitted"}</code></td>
+    <td>无（Ollama 层 <code>think:false</code>）</td>
+  </tr>
+  <tr>
+    <td>context_management</td>
+    <td><code>{edits: [{type: "clear_thinking_20251015", keep: "all"}]}</code></td>
+    <td>无（Python 层 <code>summarize_old_messages</code>）</td>
+  </tr>
+  <tr>
+    <td>safeguards</td>
+    <td><code>[{type: "dangerous_tool_use", classifier_context: {...}}]</code></td>
+    <td>无</td>
+  </tr>
+  <tr>
+    <td>output_config</td>
+    <td><code>{effort: "medium"}</code></td>
+    <td>无</td>
+  </tr>
+  <tr>
+    <td>prompt caching</td>
+    <td><code>cache_control</code> 标记 + <code>_system_summary</code> 跟踪</td>
+    <td>无</td>
+  </tr>
+  <tr>
+    <td>messages 组装</td>
+    <td>逐轮追加 <code>assistant(tool_use)</code> + <code>user(tool_result)</code> + mid-conversation <code>system</code> 轮</td>
+    <td>逐轮追加 <code>assistant(tool_use)</code> + <code>user(tool_result)</code>（无 system 轮注入）</td>
+  </tr>
+  <tr>
+    <td>metadata</td>
+    <td><code>{user_id: {device_id, session_id}}</code></td>
+    <td>无</td>
+  </tr>
+</table>
+
+<!-- ==================== 6. 源码结构 ==================== -->
+<h2>六、mycode 源码结构</h2>
+
+<div class="grid-2">
+  <div class="card mycode">
+    <div class="card-title"><span class="dot"></span> src/mycode/ 目录树</div>
+    <div class="file-tree">
+<span class="dir">src/mycode/</span>
+├── <span class="file">__main__.py</span>          <span style="color:var(--text-dim)"># 入口</span>
+├── <span class="dir">cli/</span>
+│   └── <span class="file">main.py</span>           <span style="color:var(--text-dim)"># CLI 参数解析、启动 loop</span>
+├── <span class="dir">agent/</span>
+│   ├── <span class="highlight">loop.py</span>          <span style="color:var(--text-dim)"># ★ AgentLoop 主循环</span>
+│   ├── <span class="file">context.py</span>        <span style="color:var(--text-dim)"># Context 消息历史</span>
+│   ├── <span class="file">context_management.py</span> <span style="color:var(--text-dim)"># token 估算 + 摘要</span>
+│   └── <span class="file">transcript.py</span>     <span style="color:var(--text-dim)"># 会话日志</span>
+├── <span class="dir">llm/</span>
+│   ├── <span class="file">provider.py</span>       <span style="color:var(--text-dim)"># LLMProvider Protocol</span>
+│   └── <span class="file">ollama.py</span>         <span style="color:var(--text-dim)"># Ollama 适配器</span>
+├── <span class="dir">tools/</span>                 <span style="color:var(--text-dim)"># 18 个工具</span>
+│   ├── <span class="file">base.py</span>           <span style="color:var(--text-dim)"># ToolRegistry + ToolBase</span>
+│   ├── <span class="highlight">bash.py</span>  <span class="highlight">read.py</span>  <span class="highlight">write.py</span>  <span class="highlight">edit.py</span>
+│   ├── <span class="highlight">glob.py</span>  <span class="highlight">grep.py</span>  <span class="file">webfetch.py</span>  <span class="file">websearch.py</span>
+│   ├── <span class="file">agent.py</span>  <span class="file">todo_write.py</span>  <span class="file">skill.py</span>  <span class="file">workflow.py</span>
+│   ├── <span class="file">cron.py</span>  <span class="file">worktree.py</span>  <span class="file">notebook_edit.py</span>
+│   ├── <span class="file">list_agents.py</span>  <span class="file">messaging.py</span>  <span class="file">task_stop.py</span>
+├── <span class="dir">harness/</span>
+│   ├── <span class="highlight">permissions.py</span>  <span style="color:var(--text-dim)"># ★ PermissionManager</span>
+│   ├── <span class="highlight">hooks.py</span>        <span style="color:var(--text-dim)"># ★ HookManager</span>
+│   ├── <span class="file">skills.py</span>        <span style="color:var(--text-dim)"># Skills 加载（骨架）</span>
+│   └── <span class="file">subagent.py</span>      <span style="color:var(--text-dim)"># 子 agent 调度</span>
+└── <span class="dir">prompt/</span>
+    └── <span class="highlight">system.py</span>       <span style="color:var(--text-dim)"># ★ system prompt 模板</span>
+    </div>
+  </div>
+
+  <div class="card claude">
+    <div class="card-title"><span class="dot"></span> artifacts/recon/ 逆向产出</div>
+    <div class="file-tree">
+<span class="dir">artifacts/recon/</span>
+├── <span class="highlight">capture-full-mode.json</span>  <span style="color:var(--text-dim)"># ★ 完整请求体（68KB）</span>
+├── <span class="highlight">system-prompt.md</span>       <span style="color:var(--text-dim)"># ★ 完整 system prompt</span>
+├── <span class="highlight">tools.json</span>             <span style="color:var(--text-dim)"># ★ 运行时 20 工具 schema</span>
+├── <span class="highlight">tool-contracts.json</span>    <span style="color:var(--text-dim)"># ★ 白盒 44 契约</span>
+├── <span class="file">request-skeleton.json</span>    <span style="color:var(--text-dim)"># 请求骨架</span>
+├── <span class="file">request-headers.json</span>     <span style="color:var(--text-dim)"># 请求头</span>
+├── <span class="file">env-vars.txt</span>            <span style="color:var(--text-dim)"># 环境变量清单</span>
+└── <span class="dir">r3/</span>                    <span style="color:var(--text-dim)"># R3 多轮 loop 实验</span>
+    </div>
+
+    <h3>逆向方法（A+B+D）</h3>
+    <div class="harness-layer implemented">
+      <div class="hl-title">B 动态抓取（核心）</div>
+      <div class="hl-desc">自建 mock 端点 → <code>ANTHROPIC_BASE_URL</code> 重定向 → 捕获真实请求体 → SSE 流式 mock 驱动多轮 loop</div>
+    </div>
+    <div class="harness-layer implemented">
+      <div class="hl-title">D 白盒契约</div>
+      <div class="hl-desc"><code>sdk-tools.d.ts</code> → <code>ToolInputSchemas</code> union → 44 个工具契约</div>
+    </div>
+    <div class="harness-layer implemented">
+      <div class="hl-title">A 静态提取</div>
+      <div class="hl-desc">二进制明文字符串常量 → system prompt 片段 / env 名 / 路径约定</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 7. 评测对比 ==================== -->
+<h2>七、评测对比结果（12 任务 × 3 难度）</h2>
+
+<div class="svg-wrap">
+  <table class="cmp-table" style="margin-bottom:0">
+    <tr>
+      <th>指标</th>
+      <th class="mycode-col">mycode (qwen3-32b)</th>
+      <th class="claude-col">claude-code (opus-5-5)</th>
+    </tr>
+    <tr>
+      <td>通过率</td>
+      <td><b>11/12 (91.7%)</b></td>
+      <td><b>11/12 (91.7%)</b></td>
+    </tr>
+    <tr>
+      <td>平均耗时</td>
+      <td style="color:var(--accent-green)"><b>11.2s</b>（快 5.4×）</td>
+      <td>60.2s</td>
+    </tr>
+    <tr>
+      <td>Easy (4 题)</td>
+      <td>4/4 ✓</td>
+      <td>4/4 ✓</td>
+    </tr>
+    <tr>
+      <td>Medium (4 题)</td>
+      <td style="color:var(--accent-green)">4/4 ✓</td>
+      <td>3/4（m3 超时 120s）</td>
+    </tr>
+    <tr>
+      <td>Hard (4 题)</td>
+      <td>3/4（h1 多文件分析失败）</td>
+      <td style="color:var(--accent-green)">4/4 ✓</td>
+    </tr>
+    <tr>
+      <td>效率归因</td>
+      <td>system prompt 更短 + 工具按需注册 + loop 轮数更少</td>
+      <td>重量级 harness + 完整 system prompt + 更多轮次</td>
+    </tr>
+    <tr>
+      <td>失败模式</td>
+      <td>多文件分析类（system prompt 不够全面）</td>
+      <td>简单 shell 任务超时（"杀鸡用牛刀"）</td>
+    </tr>
+  </table>
+</div>
+
+<div class="note">
+  <b>关键发现：</b>两个 harness 通过率持平但失败模式互补——mycode 轻量 harness 在简单任务上效率优势明显（5.4×），claude-code 重量级 harness 在复杂分析任务上更全面。后续改进方向：mycode 补强多文件分析类 system prompt + Pass^k 稳定性验证。
+</div>
+
+<!-- ==================== 8. 逆向方法流程 ==================== -->
+<h2>八、逆向方法流程（如何从 claude-code 还原 harness）</h2>
+
+<div class="svg-wrap">
+  <svg width="880" height="280" viewBox="0 0 880 280">
+    <defs>
+      <marker id="arr2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#8b949e"/>
+      </marker>
+    </defs>
+
+    <!-- Step 1 -->
+    <rect x="20" y="20" width="160" height="60" rx="6" fill="#1c2330" stroke="#d97757"/>
+    <text x="100" y="42" text-anchor="middle" fill="#d97757" font-size="12" font-weight="600">D 白盒</text>
+    <text x="100" y="58" text-anchor="middle" fill="#8b949e" font-size="11">sdk-tools.d.ts</text>
+    <text x="100" y="72" text-anchor="middle" fill="#8b949e" font-size="11">→ 44 工具契约</text>
+
+    <line x1="180" y1="50" x2="210" y2="50" stroke="#8b949e" marker-end="url(#arr2)"/>
+
+    <!-- Step 2 -->
+    <rect x="210" y="20" width="180" height="60" rx="6" fill="#1c2330" stroke="#d97757"/>
+    <text x="300" y="42" text-anchor="middle" fill="#d97757" font-size="12" font-weight="600">A 静态提取</text>
+    <text x="300" y="58" text-anchor="middle" fill="#8b949e" font-size="11">二进制明文字符串常量</text>
+    <text x="300" y="72" text-anchor="middle" fill="#8b949e" font-size="11">→ prompt 片段 / env / 路径</text>
+
+    <line x1="390" y1="50" x2="420" y2="50" stroke="#8b949e" marker-end="url(#arr2)"/>
+
+    <!-- Step 3 -->
+    <rect x="420" y="20" width="220" height="60" rx="6" fill="#1c2330" stroke="#39d0d8" stroke-width="1.5"/>
+    <text x="530" y="38" text-anchor="middle" fill="#39d0d8" font-size="12" font-weight="600">B 动态抓取（核心）</text>
+    <text x="530" y="54" text-anchor="middle" fill="#8b949e" font-size="11">1. 起 mock server (127.0.0.1:8731)</text>
+    <text x="530" y="68" text-anchor="middle" fill="#8b949e" font-size="11">2. ANTHROPIC_BASE_URL 指向 mock</text>
+    <text x="530" y="82" text-anchor="middle" fill="#8b949e" font-size="11">3. 单命令内起 mock + 跑 claude</text>
+
+    <line x1="640" y1="50" x2="670" y2="50" stroke="#8b949e" marker-end="url(#arr2)"/>
+
+    <!-- Step 4 -->
+    <rect x="670" y="20" width="190" height="60" rx="6" fill="#1c2330" stroke="#3fb950"/>
+    <text x="765" y="42" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">捕获完整请求体</text>
+    <text x="765" y="58" text-anchor="middle" fill="#8b949e" font-size="11">system prompt 11 段</text>
+    <text x="765" y="72" text-anchor="middle" fill="#8b949e" font-size="11">+ 20 工具 schema + 编排参数</text>
+
+    <!-- Down -->
+    <line x1="765" y1="80" x2="765" y2="110" stroke="#8b949e" marker-end="url(#arr2)"/>
+
+    <!-- Step 5: SSE mock -->
+    <rect x="640" y="112" width="250" height="50" rx="6" fill="#1c2330" stroke="#bc8cff"/>
+    <text x="765" y="132" text-anchor="middle" fill="#bc8cff" font-size="12" font-weight="600">可编程 SSE mock 驱动多轮 loop</text>
+    <text x="765" y="148" text-anchor="middle" fill="#8b949e" font-size="11">mock 返回 tool_use → claude 执行 → 回填 tool_result</text>
+
+    <line x1="640" y1="137" x2="610" y2="137" stroke="#8b949e" marker-end="url(#arr2)"/>
+
+    <!-- Step 6: analyze -->
+    <rect x="380" y="112" width="220" height="50" rx="6" fill="#1c2330" stroke="#d29922"/>
+    <text x="490" y="132" text-anchor="middle" fill="#d29922" font-size="12" font-weight="600">逐轮分析 messages 结构差异</text>
+    <text x="490" y="148" text-anchor="middle" fill="#8b949e" font-size="11">REQ2 vs REQ1 → 追加 tool_use/tool_result 对</text>
+
+    <line x1="380" y1="137" x2="350" y2="137" stroke="#8b949e" marker-end="url(#arr2)"/>
+
+    <!-- Step 7: output -->
+    <rect x="120" y="112" width="220" height="50" rx="6" fill="#1c2330" stroke="#3fb950"/>
+    <text x="230" y="132" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">落盘 artifacts/recon/</text>
+    <text x="230" y="148" text-anchor="middle" fill="#8b949e" font-size="11">harness 报告 + 可复现资产</text>
+
+    <!-- Bottom: key findings -->
+    <rect x="120" y="190" width="640" height="70" rx="6" fill="rgba(188,140,255,0.06)" stroke="rgba(188,140,255,0.3)"/>
+    <text x="440" y="210" text-anchor="middle" fill="#bc8cff" font-size="12" font-weight="600">关键协议发现</text>
+    <text x="440" y="228" text-anchor="middle" fill="#c9d1d9" font-size="11">① 逐轮 messages 追加 assistant(tool_use) + user(tool_result) 对驱动循环</text>
+    <text x="440" y="244" text-anchor="middle" fill="#c9d1d9" font-size="11">② mid-conversation system turns：Environment / token 预算以 system 轮注入</text>
+    <text x="440" y="260" text-anchor="middle" fill="#c9d1d9" font-size="11">③ SSE 流式是驱动真实 loop 的必要条件（非流式 JSON 会被 claude 静默忽略）</text>
+  </svg>
+</div>
+
+<div class="note" style="margin-top:24px">
+  <b>图示数据来源：</b><br>
+  • claude-code 侧：全部来自 <code>mycode/artifacts/recon/</code> 逆向产出（B 路线动态抓取 + D 白盒 <code>sdk-tools.d.ts</code>）<br>
+  • mycode 侧：全部来自 <code>mycode/src/mycode/</code> 实际源码（2026-10-14 快照）<br>
+  • 评测数据：来自 <code>mycode/eval/eval-report.md</code>（12 任务 × 3 难度）
+</div>
+
+</body>
+</html>

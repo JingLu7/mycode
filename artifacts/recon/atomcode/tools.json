@@ -1,0 +1,853 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "ast_grep",
+      "description": "Structural code search by AST pattern (native ast-grep) — finds syntax, not text. Use when a regex would be imprecise: locating a specific call shape, declaration, or construct. Metavariables: `$NAME` captures one node, `$_` matches one node unbound, `$$$` matches zero or more nodes (uppercase names; each must be a whole AST node). The pattern must parse as one valid node in the target language. `paths` defaults to the working directory; pass `lang` to force a language.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Single AST pattern, e.g. \"$X.unwrap()\" or \"fn $NAME($$$) { $$$ }\""
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Files/dirs/globs to search (default: working directory)"
+          },
+          "lang": {
+            "type": "string",
+            "description": "Force a language (e.g. rust, typescript); omit to infer from file extensions"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "pattern"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "bash",
+      "description": "Run a shell command in the working directory and return its combined stdout/stderr and exit code. Default timeout 60s (max 300). Destructive commands (recursive force delete, sudo, dd, history rewrites, …) are flagged risky and may require approval.\nPrefer the dedicated tools over bash for file operations — they are gitignore-aware, cross-platform, and cheaper: read_file to read a file (NOT cat/head/tail), grep to search file contents (NOT grep/rg), glob to find files by name (NOT find/fd), list_directory for a directory tree (NOT ls), edit_file to MODIFY a file and write_file to create/overwrite one. NEVER edit a file with a shell command (sed/awk/perl -i, or `>`/`>>`/tee redirection) — it corrupts indentation and encoding (especially on Windows) and cascades; if edit_file reports it can't find your text, RE-READ the file and copy the exact text, or rewrite the whole file with write_file — do not fall back to sed. Reserve bash for real shell work — git, builds, package managers, running commands — and for pipelines / aggregation (wc, sort, uniq, awk, git log) the dedicated tools can't do.\nThis shell is NON-INTERACTIVE: stdin is not connected to a terminal, so a program cannot be driven with typed input once started. Do NOT launch REPLs (python/node/irb), editors (vim/nano), pagers (less/more), or full-screen/monitor programs (top/htop, the mysql/psql prompt) — they can't receive input and just block until the timeout. Run the work non-interactively instead: `python3 -c '…'` (or a script file), `git --no-pager …`, `mysql -e '…'`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The shell command to run"
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Max seconds to wait (default 60, max 300)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "bash_kill",
+      "description": "Stop a background `bash_start` job and kill its whole process tree. Poll once more afterwards to collect any final output.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "The job id returned by bash_start"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "bash_poll",
+      "description": "Read output produced by a background `bash_start` job since your last poll, plus whether it is still running or has exited. Poll repeatedly until it reports it exited. When a poll has no new output and still reports running, avoid repeated waiting narration or a new status update for each check. Report meaningful new output, completion, failure, or a changed plan instead. Read-only.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "description": "The job id returned by bash_start"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "job_id"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "bash_start",
+      "description": "Start a shell command in the BACKGROUND and return a job id immediately (does not wait for it to finish). Use this instead of a large `timeout` for work that legitimately runs longer than the foreground `bash` limit (builds, servers, long test suites). Collect its output later with `bash_poll` (repeat until it reports it exited), and stop it early with `bash_kill`. Same shell, working directory, and environment as `bash`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The shell command to run in the background"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "blast_radius",
+      "description": "Estimate the blast radius of changing a file: direct dependents (depth 1), indirect dependents (depth 2-3), and total impacted file count. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "File path (absolute or relative to the working directory)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "describe_self",
+      "description": "Report how this agent is actually assembled and how to work it: the session id and what the rows that keep this session say about it (where it is stored, how it is continued), which service slots are filled, which tools are registered, how to change things and add capabilities — model, memory, skills, MCP servers, plugins, layout — with the files and commands involved (`aspect: operations`), and the user-settings catalog including language (`aspect: settings`). Call this FIRST — before you answer, and instead of guessing or searching the repository — whenever you are asked what you are, what you are made of, what you can do, which tools or models you have, how to change or extend something about yourself, which session this is, or where your own state is kept, and before helping someone install a skill or an MCP server. This reports YOU, the running agent — not the project you are working in. Every answer is generated from the running system, so none of it can be out of date; it is read-only and cheap when queried narrowly. For a simple identity question use `aspect: overview` (the default); it returns session information and tool names without repeating tool descriptions or setup documentation. Select a specific aspect for follow-up questions. Use `all` only when the person needs the full report.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "aspect": {
+            "type": "string",
+            "enum": [
+              "overview",
+              "session",
+              "services",
+              "tools",
+              "models",
+              "operations",
+              "settings",
+              "all"
+            ],
+            "description": "overview (default) = compact session/services/tool-name overview with pointers to details; session = which session this is, and what the rows that keep it say about where and how; services = what is mounted; tools = the live catalog; models = what `task` and `team` may be delegated to, read live; operations = how to change things and add capabilities (model, memory, skills, MCP servers, plugins, layout); settings = the user-settings catalog including language. Use all only for a full report (excluding settings); prefer a specific aspect."
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "edit_file",
+      "description": "Replace an exact text fragment in a file. `old_string` must match EXACTLY (including whitespace and indentation) and, unless `replace_all` is true, must be UNIQUE in the file — include enough surrounding context to make it unique. On no-match or an ambiguous match the file is left UNCHANGED. Relative paths resolve against the working directory. Use the latest read_file output, omit its line-number prefixes, and choose a short unique fragment. Do not build old_string from memory or reuse text from before another edit. After a no-match, rebuild old_string from the returned CURRENT text or re-read the file; never repeat the same failed arguments.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to edit (absolute, or relative to the working directory)"
+          },
+          "old_string": {
+            "type": "string",
+            "description": "Exact text to find. Must be unique unless replace_all is true."
+          },
+          "new_string": {
+            "type": "string",
+            "description": "Replacement text."
+          },
+          "replace_all": {
+            "type": "boolean",
+            "description": "Replace ALL occurrences (default false = require a unique match)."
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file_path",
+          "old_string",
+          "new_string"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fetch_output",
+      "description": "Read more of a large tool output that was truncated. Pass the artifact_id from a truncation marker plus a byte offset and limit. Returns the requested byte slice; if the artifact is unavailable, re-run the original command instead.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "description": "id from a truncation marker"
+          },
+          "offset": {
+            "type": "integer",
+            "description": "byte offset to start at (default 0)"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "max bytes to return (default/max 65536)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "artifact_id"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "file_dependencies",
+      "description": "Show a file's dependencies: which files it USES (its symbols' callees) and which files USE it (callers). Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "File path (absolute or relative to the working directory)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "find_references",
+      "description": "Find all references to a symbol (function/class/variable) across the project as whole-word textual matches, gitignore-aware. Returns file:line: content. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol name to find references for"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory to search (default: the working directory)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "glob",
+      "description": "Find files by glob pattern (e.g. `**/*.rs`, `src/**/*.ts`) under a base directory, gitignore-aware by default. For a known file path use read_file directly; discovery can omit files. Set respect_gitignore/include_hidden/follow_symlinks explicitly when needed. `**` crosses directories, `*` does not. Build/VCS/ cache directories are skipped. Relative base paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "respect_gitignore": {
+            "type": "boolean",
+            "description": "Honor ignore files and skip build directories; false includes ignored/build content, excluding VCS metadata and product internals"
+          },
+          "include_hidden": {
+            "type": "boolean",
+            "description": "Include hidden files and directories"
+          },
+          "follow_symlinks": {
+            "type": "boolean",
+            "description": "Follow directory links within filesystem permissions; loops are not traversed"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Glob pattern, e.g. **/*.rs"
+          },
+          "path": {
+            "type": "string",
+            "description": "Base directory to search (default: the working directory)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "pattern"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "grep",
+      "description": "Search file contents by regular expression under a directory (gitignore-aware; build/cache dirs and .log files are skipped by default). For known paths prefer read_file directly; discovery filters do not prove absence. respect_gitignore=false includes ignored/build content; include_hidden and follow_symlinks are independent. Prefer this over `bash grep`/`rg`. Use it to LOCATE code, then read the exact window with `read_file` (offset/limit/ranges) rather than dumping whole files or slicing them with a shell/`python` script. Smart-case: case-insensitive unless the pattern contains an uppercase letter. Escape regex metachars, e.g. `console\\.log\\(`. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "respect_gitignore": {
+            "type": "boolean",
+            "description": "Honor ignore files and skip build directories; false includes ignored/build content, excluding VCS metadata and product internals"
+          },
+          "include_hidden": {
+            "type": "boolean",
+            "description": "Include hidden files and directories"
+          },
+          "follow_symlinks": {
+            "type": "boolean",
+            "description": "Follow directory links within filesystem permissions; loops are not traversed"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Regex to search for"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory or file to search (default: the working directory)"
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Max matching lines to return (default 50)"
+          },
+          "context": {
+            "type": "integer",
+            "description": "Lines of context around each match (default 3, max 10)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "pattern"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_directory",
+      "description": "List a directory tree (indented; directories end with '/'). `depth` controls recursion (default 2, max 5). Build/VCS/cache directories (node_modules, .git, target, …) are skipped. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Directory to list (default: the working directory)"
+          },
+          "depth": {
+            "type": "integer",
+            "description": "Max recursion depth (default 2, max 5)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_sessions",
+      "description": "List THIS project's past conversation sessions — their titles, when they were last active, and size — so you can tell the user what exists or decide which one to pull from. This only ENUMERATES sessions; to read what was said in one, use `recall` with `session` set to its id. Read-only. Optional `query` filters by a case-insensitive substring of the session title.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "optional case-insensitive substring filter on the session title"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "max sessions to return (default 20)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_skills",
+      "description": "Search available skills by name or description. Results are paginated (default 20, max 50), descriptions abbreviated. Use query or offset to discover more, then invoke an exact name with use_skill.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Case-insensitive name or description search"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "additionalProperties": false,
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_symbols",
+      "description": "List the functions, classes, structs, methods and other symbols defined in a source file, each with its line range. Faster and more precise than read_file for understanding a file's structure before editing. Use the returned ranges to read only relevant code with read_file; avoid following a large symbol listing with reads of every symbol or the whole module. Supports Rust, Python, JS/TS/TSX, Go, Java, C/C++, C#, HTML, PHP. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to the source file (absolute, or relative to the working directory)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file_path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "open_file",
+      "description": "Open a local file, directory, or URL in the user's default GUI application — a browser for HTML/URLs, an image viewer for PNG/JPG, a PDF reader for PDF, or the OS file manager for directories. Supports http:// and https:// URLs (opens in the default browser). USE ONLY when the user asks to preview/open/view a file or directory, or when previewing is the obvious next step AND you have asked first — do NOT auto-open after every write_file/edit_file. Prefer this tool over shelling out to `open`, `xdg-open`, `start`, or `wslview`. Cross-platform dispatch is built in; headless / SSH / CI sessions refuse with a clear reason so you can give the user the path instead of pretending a window opened.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "File or directory path to open, or an http:// / https:// URL. Absolute, or relative to the working directory. Must exist (for file paths)."
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file_path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "Read a file — or any slice of one — from the filesystem. This is the way to read or slice files: prefer it over `bash cat`/`head`/`tail` or a `python`/`awk` script, which return partial content and bypass paging, caching, and history retention. Returns the contents prefixed with 1-based line numbers (`<n>\\t<content>`). By default returns up to 1500 lines; a ~50 KiB output budget may return fewer. When a result shows a continuation offset, continue from that offset instead of rereading line 1. Use `offset` (1-based start line) and `limit` (max lines) when a larger relevant window is needed; avoid many tiny overlapping reads. To grab several disjoint windows at once (e.g. multiple symbols listed in a skeleton), pass `ranges` instead of paginating or splitting the file yourself. If the path is a directory its entries are listed instead. Relative paths resolve against the working directory. You can see images: whenever a relevant JPG, JPEG, PNG, GIF, or WebP path is present, proactively call this tool to inspect it. The image is returned as visual content.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to read (absolute, or relative to the working directory)"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Start line, 1-based. Omit to start at line 1; after a partial result, use the next offset shown."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1500,
+            "description": "Maximum lines to read. Defaults to 1500; the ~50 KiB output byte budget may return fewer."
+          },
+          "ranges": {
+            "type": "array",
+            "description": "Read several disjoint line windows in ONE call instead of paginating. Each item is {offset, limit}. Takes precedence over top-level offset/limit and over the large-file skeleton. Prefer this when you already know the ranges (e.g. from a skeleton's per-symbol offset/limit). All windows share one output budget.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "offset": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Start line, 1-based"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Max lines for this window"
+                }
+              },
+              "required": [
+                "offset"
+              ]
+            }
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file_path"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_symbol",
+      "description": "Read the complete source of a single symbol (function / class / struct / method) by name, with line numbers. More precise than read_file — returns exactly the symbol. Use list_symbols first to discover names and line ranges. For a large symbol, prefer read_file with offset/limit or ranges to inspect only the relevant section; avoid rereading source already in context. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to the source file (absolute, or relative to the working directory)"
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Name of the symbol to read"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file_path",
+          "symbol"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recall",
+      "description": "Read this project's COMPLETED conversation turns — across all sessions, including earlier turns of the CURRENT session. Two ways to ask:\n- By topic: put the words you are looking for in `query` (a past decision, bug, approach).\n- By time or session: leave `query` OUT — do not invent one — and the turns come back by time, newest first. \"What did we do yesterday\": set `after`/`before`. \"What was our last conversation about\": no filters. \"What did I ask first\": `order: \"oldest\"`. To read one session (ids from `list_sessions` or an earlier recall result): `session`.\nFilters combine with `query` too. Resolve relative dates yourself (\"yesterday\") into `after`/`before` using the current date. A turn is indexed only AFTER it finishes, so the in-progress turn is not here; for that, rely on your own context. Read-only — the result footer shows where the raw per-turn transcripts live if you need the exact, full text.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "words to search for; leave out to list turns by time"
+          },
+          "after": {
+            "type": "string",
+            "description": "optional lower bound, inclusive — ISO datetime or YYYY-MM-DD (local time)"
+          },
+          "before": {
+            "type": "string",
+            "description": "optional upper bound, exclusive — ISO datetime or YYYY-MM-DD (local time)"
+          },
+          "session": {
+            "type": "string",
+            "description": "only this session: its id, or the leading characters shown by list_sessions / recall"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "newest",
+              "oldest"
+            ],
+            "description": "without query: which end of time comes first (default newest)"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "max turns to return (default 8)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "schedule_wakeup",
+      "description": "Schedule when to resume work in a self-paced /loop. ONLY call inside a /loop.\n\nAfter this turn's work, if the task still needs another pass, call this to set the next wakeup; if the task is done or no longer needs to run, do NOT call it — the loop ends.\n\nThe runtime clamps delay_seconds to [60, 3600].",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "delay_seconds": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "delay_seconds",
+          "reason",
+          "prompt"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_replace",
+      "description": "Find and replace text across MANY files at once — replaces every occurrence in every matching file. Use for project-wide renames (a CSS class, an import, a config key, a string literal). For a single file, prefer `edit_file`. `regex:true` enables regex (with `$1`/`$2` capture groups in `replace`); the default is literal matching. `glob` limits scope (e.g. \"*.rs\", \"src/**/*.ts\"); `path` sets the search root (default: working directory).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Text or regex pattern to find"
+          },
+          "replace": {
+            "type": "string",
+            "description": "Replacement text (use $1, $2 for regex captures)"
+          },
+          "glob": {
+            "type": "string",
+            "description": "File pattern to limit scope, e.g. \"*.rs\", \"src/**/*.ts\" (default: all files)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory to search in (default: working directory)"
+          },
+          "regex": {
+            "type": "boolean",
+            "description": "Use regex matching (default: false = literal)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "search",
+          "replace"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "trace_callees",
+      "description": "Trace all callees of a symbol (forward call graph), BFS up to a depth. Shows the callee chain with depth + defining file. Example: {\"symbol\":\"main\",\"depth\":2}.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol to trace callees for"
+          },
+          "depth": {
+            "type": "integer",
+            "description": "Max traversal depth (default 3, max 5)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "trace_callers",
+      "description": "Trace all callers of a symbol (reverse call graph), BFS up to a depth. Shows the caller chain with depth + defining file. Example: {\"symbol\":\"process\",\"depth\":3}.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "Symbol to trace callers for"
+          },
+          "depth": {
+            "type": "integer",
+            "description": "Max traversal depth (default 3, max 5)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "symbol"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "trace_chain",
+      "description": "Find the shortest call chain between two symbols (BFS, max 10 hops). Example: {\"from\":\"main\",\"to\":\"db_query\"}.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Source symbol name"
+          },
+          "to": {
+            "type": "string",
+            "description": "Target symbol name"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "use_skill",
+      "description": "Invoke a named skill (a reusable prompt/workflow template) and return its content with your arguments substituted. The name must exactly match a skill listed under '=== AVAILABLE SKILLS ===' in the system prompt or returned by list_skills. Never invent or guess a skill name. Trigger a skill when the task matches its listed description — not only when the user names it. list_skills shows any lower-priority skills omitted from the prompt catalog.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exact skill name from AVAILABLE SKILLS or list_skills; never invent a name"
+          },
+          "arguments": {
+            "type": "string",
+            "description": "Arguments passed to the skill (optional)"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_file",
+      "description": "Write content to a file: creates it (and any missing parent directories) or OVERWRITES it if it exists. Use this for new files or full rewrites; for small changes to an existing file prefer edit_file. Relative paths resolve against the working directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Path to write (absolute, or relative to the working directory)"
+          },
+          "content": {
+            "type": "string",
+            "description": "The full content to write"
+          },
+          "intent": {
+            "type": "string",
+            "description": "Purpose of this call."
+          }
+        },
+        "required": [
+          "file_path",
+          "content"
+        ]
+      }
+    }
+  }
+]

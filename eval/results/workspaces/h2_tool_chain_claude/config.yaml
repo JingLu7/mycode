@@ -1,0 +1,7 @@
+app_name: myapp
+enabled_modules:
+  - auth
+  - database
+  - api
+  - cache
+disable_modules: []

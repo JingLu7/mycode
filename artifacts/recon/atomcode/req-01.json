@@ -1,0 +1,16 @@
+{
+  "seq": 1,
+  "method": "POST",
+  "url": "/v1/chat/completions",
+  "headers": {
+    "content-type": "application/json",
+    "authorization": "Bearer dummy-mock-key",
+    "x-atomcode-session-id": "5e7db37e-f5d0-4af5-a661-02f620c248bc",
+    "accept": "*/*",
+    "user-agent": "atomcode/5.2.4",
+    "accept-encoding": "gzip",
+    "host": "127.0.0.1:3456",
+    "content-length": "392"
+  },
+  "body": "{\"model\":\"qwen3.8-27b\",\"messages\":[{\"role\":\"system\",\"content\":\"You name conversations. Given the first message a person sent, reply with a short title for the conversation: at most eight words, in the person's own language, no quotes, no trailing period, and nothing but the title.\"},{\"role\":\"user\",\"content\":\"hello\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true},\"max_tokens\":32768}"
+}

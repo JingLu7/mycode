@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# 外部克隆的上游仓库（各自独立 git 仓，不纳入本仓）
+tools/rea/
+tools/cannbot-knowledge/

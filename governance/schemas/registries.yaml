@@ -1,0 +1,96 @@
+# mycode 知识库 Registry
+# domain、route、platform、tag 受控值注册
+
+domains:
+  recon:
+    description: 逆向工程发现与方法论
+    direct_types: []
+    precreate_routes: true
+  dev:
+    description: mycode 自身开发知识与设计决策
+    direct_types: []
+  common:
+    description: 通用工具链与环境知识
+    direct_types: [glossaries]
+
+technologies:
+  claude-code:
+    type: agent_cli
+    description: "@anthropic-ai/claude-code 逆向目标"
+    domains: [recon]
+  codex:
+    type: agent_cli
+    description: codex 逆向目标（预留）
+    domains: [recon]
+  atomcode:
+    type: agent_cli
+    description: atomcode 逆向目标（预留）
+    domains: [recon]
+
+scopes:
+  shared:
+    description: 同一领域内不依赖具体逆向目标的知识
+    domains: [recon]
+
+platforms:
+  agnostic:
+    description: 结论与平台无关
+  linux:
+    description: Linux 环境
+  macos:
+    description: macOS 环境
+  bun:
+    description: Bun runtime 环境
+
+tags:
+  task.design:
+    dimension: task
+    description: 设计语义、架构或协议
+  task.implementation:
+    dimension: task
+    description: 编写或集成实现
+  task.debugging:
+    dimension: task
+    description: 定位构建、运行时或协议问题
+  task.reverse_engineering:
+    dimension: task
+    description: 逆向工程分析与提取
+  task.testing:
+    dimension: task
+    description: 设计验证和测试
+  task.lookup:
+    dimension: task
+    description: 查询术语、接口或规范事实
+  topic.harness:
+    dimension: topic
+    description: agent CLI 的 harness 结构与运行模型
+  topic.agent_loop:
+    dimension: topic
+    description: agent 循环协议与消息结构
+  topic.tool_system:
+    dimension: topic
+    description: 工具 schema、目录与调用机制
+  topic.system_prompt:
+    dimension: topic
+    description: system prompt 结构与分段
+  topic.request_protocol:
+    dimension: topic
+    description: API 请求参数与 headers
+  topic.mock_capture:
+    dimension: topic
+    description: mock 端点抓取方法
+  topic.sse_streaming:
+    dimension: topic
+    description: SSE 流式响应协议
+  topic.sandbox:
+    dimension: topic
+    description: 沙箱环境约束
+  topic.ollama:
+    dimension: topic
+    description: ollama 本地模型服务
+  topic.methodology:
+    dimension: topic
+    description: 逆向方法论与路线选择
+  topic.architecture:
+    dimension: topic
+    description: mycode 架构形态与设计决策

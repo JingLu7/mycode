@@ -1,0 +1,41 @@
+# mycode
+
+贴近 claude-code 原栈的本地智能编程助手 CLI（Python 3.11+），模型层通过 ollama 调用本地模型。
+
+## 目录结构
+
+| 目录 | 内容 |
+|------|------|
+| `src/mycode/` | 主实现：agent / cli / harness / llm / prompt / tools |
+| `src/mycode_atom/` | atomcode 相关实现 |
+| `tests/` | 分阶段验证脚本（verify_phase*.py） |
+| `eval/` | 评测任务、脚本与历史结果 |
+| `knowledge/` | 知识正文根（OKF Bundle），recon / dev / common 三个 domain |
+| `governance/` | 路径与 frontmatter 规范、schema |
+| `artifacts/` | 逆向抓取产出（请求体等证据文件） |
+| `logs/` | 每日工作日志 |
+| `docs/` | 项目状态与逆向报告 |
+| `tools/` | 逆向辅助脚本（`recon/`）；`rea/`、`cannbot-knowledge/` 为外部克隆仓库，未纳入本仓 |
+
+## 快速开始
+
+```bash
+pip install -e .
+mycode "帮我看下这个仓库的入口"
+```
+
+常用参数：`--model`（默认 `qwen3.8-27b`）、`--base-url`（默认 `http://localhost:11434`）、
+`--permission-mode`（default / acceptEdits / plan / bypassPermissions）、`--continue`、`--resume`。
+
+## 外部依赖
+
+`tools/rea/`、`tools/cannbot-knowledge/` 是独立克隆的上游仓库（gitcode），不随本仓分发，需要时自行 clone：
+
+```bash
+git clone https://gitcode.com/GitHub_Trending/rea2/rea.git tools/rea
+git clone https://gitcode.com/cann/cannbot-knowledge.git tools/cannbot-knowledge
+```
+
+## 文档
+
+项目现状见 `docs/project-status.md`；Agent 工作约定见 `AGENTS.md`。

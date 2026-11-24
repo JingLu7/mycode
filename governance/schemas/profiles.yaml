@@ -1,0 +1,34 @@
+# mycode 知识库 Profile 定义
+# 公共必选字段 + 路径 Profile 到 OKF type 的映射
+
+common_required:
+  - type
+  - title
+  - description
+  - tags
+  - status
+  - sources
+  - created_at
+  - updated_at
+
+profiles:
+  concepts:
+    okf_type: Concept
+    required: [platforms]
+    optional: [target_versions, aliases, verified, replaced_by]
+  apis:
+    okf_type: API
+    required: [platforms]
+    optional: [target_versions, aliases, verified, replaced_by]
+  runbooks:
+    okf_type: Runbook
+    required: [platforms]
+    optional: [aliases, verified, replaced_by]
+  guides:
+    okf_type: Guide
+    required: [platforms]
+    optional: [target_versions, aliases, verified, replaced_by]
+  glossaries:
+    okf_type: Glossary
+    required: []
+    optional: [aliases, verified, replaced_by]

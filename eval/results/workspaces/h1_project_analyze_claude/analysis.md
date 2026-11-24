@@ -1,0 +1,1 @@
+# Project Analysis Report\n\n## File List\n- `models.py`\n- `app.py`\n- `utils.py`\n\n## Line Counts\n| File | Lines |\n|------|-------|\n| `models.py` | 6 |\n| `app.py` | 5 |\n| `utils.py` | 5 |\n\n## Defined Functions\n### In `app.py`:\n- `main()`\n- `helper()`\n\n### In `utils.py`:\n- `format_date(d)`\n- `parse_int(s)`

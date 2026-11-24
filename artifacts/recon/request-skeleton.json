@@ -1,0 +1,116 @@
+{
+  "model": "claude-opus-5-5",
+  "metadata": {
+    "user_id": "{\"device_id\":\"37112fcedf12cbf90f04ebc78e7065e9579f73cd94aadc6201e3e4a45336f096\",\"account_uuid\":\"\",\"session_id\":\"5054bb20-135d-40a0-b4ff-fdb1b4f32b34\"}"
+  },
+  "max_tokens": 128000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "omitted"
+  },
+  "context_management": {
+    "edits": [
+      {
+        "type": "clear_thinking_20251015",
+        "keep": "all"
+      }
+    ]
+  },
+  "safeguards": [
+    {
+      "type": "dangerous_tool_use",
+      "classifier_context": {
+        "v": 1,
+        "permission_mode": "auto",
+        "platform": "linux",
+        "live_cwd": "/tmp",
+        "home_dir": "/tmp/claude-probe",
+        "rule_roots": {
+          "userSettings": "/tmp/claude-probe/.claude",
+          "projectSettings": "/tmp",
+          "localSettings": "/tmp",
+          "flagSettings": "/tmp",
+          "policySettings": "/tmp",
+          "cliArg": "/tmp",
+          "command": "/tmp",
+          "session": "/tmp",
+          "toolsNarrowing": "/tmp",
+          "mcpServerPolicy": "/tmp",
+          "hostCredential": "/tmp"
+        },
+        "trusted_directories": {
+          "primary": {
+            "path": "/tmp",
+            "resolved": [
+              "/tmp"
+            ]
+          },
+          "additional": [],
+          "network": [],
+          "block_reads_outside_working_directories": false
+        },
+        "rules": {
+          "allow": [],
+          "deny": [],
+          "ask": []
+        },
+        "auto_mode": {
+          "allow": [],
+          "soft_deny": [],
+          "hard_deny": [],
+          "environment": []
+        },
+        "artifact_consent_holdback": false,
+        "case_insensitive_paths": false,
+        "restricted": false,
+        "is_remote_mode": false,
+        "classify_all_shell": false,
+        "user_identity": "zigaa",
+        "git_state": {
+          "cwd": "/tmp",
+          "root": null,
+          "branch": null,
+          "default_branch": null,
+          "status": null,
+          "visibility": {
+            "origin": null,
+            "push_remote": null,
+            "remotes": [],
+            "visibility_cache": []
+          },
+          "error": "not_a_repo"
+        }
+      }
+    }
+  ],
+  "output_config": {
+    "effort": "medium"
+  },
+  "stream": true,
+  "_system_summary": [
+    {
+      "len": 74,
+      "cache": false
+    },
+    {
+      "len": 62,
+      "cache": true
+    },
+    {
+      "len": 5630,
+      "cache": true
+    }
+  ],
+  "_messages_summary": [
+    {
+      "role": "user",
+      "keys": []
+    },
+    {
+      "role": "system",
+      "keys": [
+        "output_config"
+      ]
+    }
+  ]
+}

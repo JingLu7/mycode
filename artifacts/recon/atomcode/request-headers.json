@@ -1,0 +1,10 @@
+{
+  "content-type": "application/json",
+  "authorization": "Bearer dummy-mock-key",
+  "x-atomcode-session-id": "5e7db37e-f5d0-4af5-a661-02f620c248bc",
+  "accept": "*/*",
+  "user-agent": "atomcode/5.2.4",
+  "accept-encoding": "gzip",
+  "host": "127.0.0.1:3456",
+  "content-length": "56024"
+}

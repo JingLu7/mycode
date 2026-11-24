@@ -1,0 +1,18 @@
+[project]
+name = "mycode"
+version = "0.1.0"
+description = "mycode 智能编程助手 — 贴近 claude-code 原栈的本地 agent CLI"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.28",
+]
+
+[project.scripts]
+mycode = "mycode.cli.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mycode"]

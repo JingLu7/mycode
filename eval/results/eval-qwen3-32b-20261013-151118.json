@@ -1,0 +1,76 @@
+{
+  "summary": {
+    "model": "qwen3-32b",
+    "difficulty": "easy",
+    "total": 4,
+    "harnesses": {
+      "claude": {
+        "pass": 4,
+        "total": 4,
+        "rate": "100.0%",
+        "avg_time": "40.9s",
+        "by_difficulty": {
+          "easy": "4/4"
+        }
+      }
+    }
+  },
+  "details": [
+    {
+      "task_id": "e1_file_read",
+      "difficulty": "easy",
+      "harnesses": {
+        "claude": {
+          "score": 1,
+          "reason": "匹配 5/5 个模式 ✓",
+          "elapsed": 35.47,
+          "returncode": 0,
+          "stdout_len": 99,
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "task_id": "e2_glob_search",
+      "difficulty": "easy",
+      "harnesses": {
+        "claude": {
+          "score": 1,
+          "reason": "匹配 3/3 个模式 ✓",
+          "elapsed": 36.07,
+          "returncode": 0,
+          "stdout_len": 76,
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "task_id": "e3_simple_code",
+      "difficulty": "easy",
+      "harnesses": {
+        "claude": {
+          "score": 1,
+          "reason": "测试通过 ✓",
+          "elapsed": 45.56,
+          "returncode": 0,
+          "stdout_len": 703,
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "task_id": "e4_text_replace",
+      "difficulty": "easy",
+      "harnesses": {
+        "claude": {
+          "score": 1,
+          "reason": "文件内容匹配 ✓",
+          "elapsed": 46.56,
+          "returncode": 0,
+          "stdout_len": 135,
+          "stderr": ""
+        }
+      }
+    }
+  ]
+}
